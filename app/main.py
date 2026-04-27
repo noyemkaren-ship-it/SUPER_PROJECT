@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from database.base import init_db
-from routers.routers import user_router, item_router, order_router
+from routers.routers import router
 
 app = FastAPI(title="Tiger Market")
 
@@ -16,9 +16,7 @@ app.add_middleware(SlowAPIMiddleware)
 
 templates = Jinja2Templates(directory="templates")
 
-app.include_router(user_router.router)
-app.include_router(item_router.router)
-app.include_router(order_router.router)
+app.include_router(router)
 
 @app.on_event("startup")
 def startup():
