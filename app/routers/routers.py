@@ -9,10 +9,14 @@ from slowapi.util import get_remote_address
 import hashlib
 import jwt
 import datetime
+import httpx
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 SECRET_KEY = "tiger-secret-key-2024"
+
+GO_SERVER = "http://localhost:3333"
+CPP_SERVER = "http://localhost:4444"
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
@@ -85,6 +89,58 @@ def balance(request: Request, db: Session = Depends(get_db)):
     user_name = get_current_user(request)
     return {"balance": UserService(db).get_balance(user_name)}
 
+@router.post("/users/deposit")
+@limiter.limit("10/minute")
+def deposit(request: Request, amount: float, db: Session = Depends(get_db)):
+    user_name = get_current_user(request)
+    if amount <= 0:
+        raise HTTPException(400, "Сумма пополнения должна быть положительной")
+    if amount > 100000:
+        raise HTTPException(400, "Слишком большая сумма. Максимум 100 000 за раз")
+    service = UserService(db)
+    user = service.update_balance(user_name, amount)
+    if not user:
+        raise HTTPException(404, "Пользователь не найден")
+    return {"ok": True, "balance": user.balance, "added": amount}
+
+@router.get("/go/items")
+def go_items():
+    try:
+        resp = httpx.get(f"{GO_SERVER}/items")
+        return resp.json()
+    except:
+        raise HTTPException(503, "Go-сервер недоступен")
+
+@router.get("/go/items/{category}")
+def go_items_by_category(category: str):
+    try:
+        resp = httpx.get(f"{GO_SERVER}/items/{category}")
+        return resp.json()
+    except:
+        raise HTTPException(503, "Go-сервер недоступен")
+
+@router.post("/go/orders")
+def go_create_order(request: Request, quantity: int, salesman_name: str, price: float):
+    user_name = get_current_user(request)
+    try:
+        resp = httpx.post(f"{GO_SERVER}/orders", json={
+            "user_name": user_name,
+            "quantity": quantity,
+            "salesman_name": salesman_name,
+            "price": price
+        })
+        return resp.json()
+    except:
+        raise HTTPException(503, "Go-сервер недоступен")
+
+@router.get("/cpp/wheel")
+def cpp_wheel():
+    try:
+        resp = httpx.get(f"{CPP_SERVER}/wheel")
+        return resp.json()
+    except:
+        raise HTTPException(503, "C++ сервер недоступен")
+
 @router.post("/items/add")
 @limiter.limit("10/minute")
 def add_item(request: Request, name: str, price: float, category: str, db: Session = Depends(get_db)):
@@ -126,24 +182,6 @@ def create_order(request: Request, quantity: int, salesman_name: str, price: flo
 def get_user_orders(user_name: str, db: Session = Depends(get_db)):
     orders = OrderService(db).get_user_orders(user_name)
     return [{"id": o.id, "quantity": o.quantity, "total_price": o.total_price} for o in orders]
-
-@router.post("/users/deposit/{amount}")
-@limiter.limit("10/minute")
-def deposit(request: Request, amount: float, db: Session = Depends(get_db)):
-    user_name = get_current_user(request)
-    if amount <= 0:
-        raise HTTPException(400, "Сумма пополнения должна быть положительной")
-    if amount > 100000:
-        raise HTTPException(400, "Слишком большая сумма. Максимум 100 000 за раз")
-    
-    service = UserService(db)
-    user = service.update_balance(user_name, amount)
-    if not user:
-        raise HTTPException(404, "Пользователь не найден")
-    
-    return {"ok": True, "balance": user.balance, "added": amount}
-
-
 
 @router.get("/orders/all")
 def get_my_orders(request: Request, db: Session = Depends(get_db)):
