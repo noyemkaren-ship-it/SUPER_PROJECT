@@ -19,15 +19,31 @@ type Item struct {
 	Category     string  `gorm:"not null"`
 }
 
+type User struct {
+	gorm.Model
+	Name     string  `gorm:"uniqueIndex;not null"`
+	Password string  `gorm:"not null"`
+	Age      int     `gorm:"not null"`
+	Balance  float64 `gorm:"default:0"`
+}
+
+type Order struct {
+	gorm.Model
+	UserName     string  `gorm:"not null"`
+	Quantity     int     `gorm:"not null"`
+	SalesmanName string  `gorm:"not null"`
+	Price        float64 `gorm:"not null"`
+	TotalPrice   float64 `gorm:"not null"`
+}
+
 func main() {
 	var err error
 	db, err = gorm.Open(sqlite.Open("app.db"), &gorm.Config{})
 	if err != nil {
 		panic("Нет базы")
 	}
-	db.AutoMigrate(&Item{})
+	db.AutoMigrate(&User{}, &Item{}, &Order{})
 
-	// Добавим тестовые товары, если таблица пустая
 	var count int64
 	db.Model(&Item{}).Count(&count)
 	if count == 0 {
