@@ -1,0 +1,32 @@
+<!-- templates/orders.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мои заказы</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a2e; color: #cdd6f4; text-align: center; padding: 20px; }
+        .order { background: #252536; padding: 15px; margin: 10px auto; border-radius: 12px; width: 300px; }
+        input { padding: 10px; width: 250px; border-radius: 8px; border: none; margin: 10px; }
+        button { padding: 8px 20px; background: #a6e3a1; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        a { color: #89b4fa; display: block; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Мои заказы</h1>
+    <input type="text" id="userName" placeholder="Имя пользователя">
+    <button onclick="loadOrders()">Показать заказы</button>
+    <div id="orders"></div>
+    <a href="/">На главную</a>
+    <script>
+        async function loadOrders() {
+            const name = document.getElementById('userName').value;
+            const resp = await fetch(`/orders/user/${name}`);
+            const data = await resp.json();
+            document.getElementById('orders').innerHTML = data.map(o => 
+                `<div class="order">Количество: ${o.quantity} | Сумма: ${o.total_price}₽</div>`
+            ).join('');
+        }
+    </script>
+</body>
+</html>

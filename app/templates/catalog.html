@@ -1,0 +1,60 @@
+<!-- templates/catalog.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Каталог</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a2e; color: #cdd6f4; text-align: center; padding: 20px; }
+        .item { background: #252536; padding: 15px; margin: 10px auto; border-radius: 12px; width: 300px; }
+        button { padding: 8px 20px; background: #f5c542; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        input { padding: 10px; width: 250px; border-radius: 8px; border: none; margin: 10px; }
+        a { color: #89b4fa; display: block; margin-top: 20px; }
+        .go-btn { background: #89b4fa; color: #1a1a2e; }
+        .cpp-btn { background: #f38ba8; color: #1a1a2e; }
+    </style>
+</head>
+<body>
+    <h1>Каталог товаров</h1>
+    <div id="items"></div>
+    <h2>Добавить товар</h2>
+    <input type="text" id="itemName" placeholder="Название">
+    <input type="text" id="salesmanName" placeholder="Продавец">
+    <input type="number" id="itemPrice" placeholder="Цена">
+    <input type="text" id="itemCategory" placeholder="Категория">
+    <button onclick="addItem()">Добавить товар</button>
+    <button class="go-btn" onclick="loadFromGo()">Загрузить с Go</button>
+    <button class="cpp-btn" onclick="spinWheel()">Колесо (C++)</button>
+    <a href="/">На главную</a>
+    <script>
+        async function loadItems() {
+            const resp = await fetch('/items/all');
+            const data = await resp.json();
+            document.getElementById('items').innerHTML = data.map(i => 
+                `<div class="item">${i.name} | ${i.salesman_name} | ${i.price}₽ | ${i.category}</div>`
+            ).join('');
+        }
+        async function addItem() {
+            const name = document.getElementById('itemName').value;
+            const salesman_name = document.getElementById('salesmanName').value;
+            const price = document.getElementById('itemPrice').value;
+            const category = document.getElementById('itemCategory').value;
+            await fetch(`/items/add?name=${name}&salesman_name=${salesman_name}&price=${price}&category=${category}`, { method: 'POST' });
+            loadItems();
+        }
+        async function loadFromGo() {
+            const resp = await fetch('http://localhost:3333/items');
+            const data = await resp.json();
+            document.getElementById('items').innerHTML = data.map(i => 
+                `<div class="item">🐹 ${i.Name} | ${i.SalesmanName} | ${i.Price}₽ | ${i.Category}</div>`
+            ).join('');
+        }
+        async function spinWheel() {
+            const resp = await fetch('http://localhost:4444/wheel');
+            const data = await resp.json();
+            alert('Колесо Фортуны: ' + data.prize);
+        }
+        loadItems();
+    </script>
+</body>
+</html>
