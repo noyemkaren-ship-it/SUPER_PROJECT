@@ -12,6 +12,7 @@ import datetime
 import httpx
 from models.order_models import Order
 from models.item_models import Item
+from routers.test_password import java_chek
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -44,10 +45,16 @@ def get_current_user(request: Request):
     except jwt.InvalidTokenError:
         raise HTTPException(401, "Токен недействителен")
 
-# ========== ПОЛЬЗОВАТЕЛИ ==========
 @router.post("/users/register", tags=["Пользователи"])
 @limiter.limit("5/minute")
 def register(request: Request, name: str, password: str, age: int, db: Session = Depends(get_db)):
+    if java_chek(password=password) == "empty" or java_chek(password=password) == "weak":
+        return {"message": "Очень плохой пароль!"}
+    elif java_chek(password=password) == "medium":
+        return {"message": "Пароль не плохой но можно было защитить лучше!"}
+    else:
+        pass
+
     if not name or not password or not age:
         raise HTTPException(400, "Все поля обязательны")
     if len(name) < 3:
