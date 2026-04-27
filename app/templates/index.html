@@ -3,19 +3,51 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Tiger Market</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐅 Tiger Market</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: sans-serif; background: #1a1a2e; color: #cdd6f4; text-align: center; padding: 50px; }
-        h1 { color: #f5c542; }
-        a { color: #89b4fa; margin: 10px; display: inline-block; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0d0d1a; color: #cdd6f4; text-align: center; padding: 50px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        h1 { color: #f5c542; font-size: 2.5rem; margin-bottom: 10px; }
+        .subtitle { color: #8888aa; margin-bottom: 30px; }
+        .nav { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
+        .nav a { color: #cdd6f4; text-decoration: none; background: #1a1a35; padding: 12px 25px; border-radius: 12px; transition: 0.3s; border: 1px solid #2a2a4a; display: flex; align-items: center; gap: 8px; }
+        .nav a:hover { background: #252545; border-color: #f5c542; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245,197,66,0.2); }
+        .user-status { margin-top: 30px; background: #1a1a35; padding: 15px 25px; border-radius: 12px; border: 1px solid #2a2a4a; display: none; }
+        .logout-btn { color: #f38ba8; cursor: pointer; background: none; border: 1px solid #f38ba8; padding: 8px 18px; border-radius: 8px; margin-top: 10px; transition: 0.3s; }
+        .logout-btn:hover { background: #f38ba8; color: #1a1a2e; }
     </style>
 </head>
 <body>
     <h1>🐅 Tiger Market</h1>
-    <a href="/register">Регистрация</a>
-    <a href="/login">Вход</a>
-    <a href="/catalog">Каталог</a>
-    <a href="/orders">Мои заказы</a>
+    <p class="subtitle">Маркетплейс, где правят тигры</p>
+    <div class="nav" id="nav-links">
+        <a href="/register">📝 Регистрация</a>
+        <a href="/login">🔑 Вход</a>
+        <a href="/catalog">🛍️ Каталог</a>
+        <a href="/orders">📦 Мои заказы</a>
+    </div>
+    <div class="user-status" id="user-status">
+        <p>Привет, <span id="user-name"></span>!</p>
+        <button class="logout-btn" onclick="logout()">Выйти</button>
+    </div>
+    <script>
+        async function checkAuth() {
+            const resp = await fetch('/users/balance');
+            if (resp.ok) {
+                const data = await resp.json();
+                const status = document.getElementById('user-status');
+                status.style.display = 'block';
+                document.getElementById('user-name').textContent = 'Тигр';
+                document.getElementById('nav-links').querySelectorAll('a')[0].style.display = 'none';
+                document.getElementById('nav-links').querySelectorAll('a')[1].style.display = 'none';
+            }
+        }
+        async function logout() {
+            await fetch('/users/logout', { method: 'POST' });
+            location.reload();
+        }
+        checkAuth();
+    </script>
 </body>
 </html>

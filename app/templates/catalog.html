@@ -3,57 +3,91 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Каталог</title>
+    <title>Каталог | Tiger Market</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a2e; color: #cdd6f4; text-align: center; padding: 20px; }
-        .item { background: #252536; padding: 15px; margin: 10px auto; border-radius: 12px; width: 300px; }
-        button { padding: 8px 20px; background: #f5c542; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        input { padding: 10px; width: 250px; border-radius: 8px; border: none; margin: 10px; }
-        a { color: #89b4fa; display: block; margin-top: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0d0d1a; color: #cdd6f4; padding: 20px; }
+        h1, h2 { color: #f5c542; text-align: center; }
+        .items { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin: 20px 0; }
+        .item { background: #1a1a35; padding: 20px; border-radius: 12px; width: 250px; border: 1px solid #2a2a4a; }
+        .item b { color: #a6e3a1; display: block; margin-bottom: 5px; }
+        .add-form { background: #1a1a35; padding: 25px; border-radius: 12px; max-width: 400px; margin: 0 auto; border: 1px solid #2a2a4a; }
+        input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #45475a; background: #0d0d1a; color: #fff; }
+        button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 5px; }
+        .add-btn { background: #a6e3a1; color: #1a1a2e; }
         .go-btn { background: #89b4fa; color: #1a1a2e; }
         .cpp-btn { background: #f38ba8; color: #1a1a2e; }
+        a { color: #89b4fa; display: block; text-align: center; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>Каталог товаров</h1>
-    <div id="items"></div>
-    <h2>Добавить товар</h2>
-    <input type="text" id="itemName" placeholder="Название">
-    <input type="text" id="salesmanName" placeholder="Продавец">
-    <input type="number" id="itemPrice" placeholder="Цена">
-    <input type="text" id="itemCategory" placeholder="Категория">
-    <button onclick="addItem()">Добавить товар</button>
-    <button class="go-btn" onclick="loadFromGo()">Загрузить с Go</button>
-    <button class="cpp-btn" onclick="spinWheel()">Колесо (C++)</button>
+    <h1>🛍️ Каталог товаров</h1>
+    <div class="items" id="items"></div>
+    
+    <div class="add-form">
+        <h2>Добавить товар</h2>
+        <input type="text" id="itemName" placeholder="Название">
+        <input type="number" id="itemPrice" placeholder="Цена">
+        <input type="text" id="itemCategory" placeholder="Категория">
+        <button class="add-btn" onclick="addItem()">Добавить</button>
+        <button class="go-btn" onclick="loadFromGo()">🐹 Загрузить с Go</button>
+        <button class="cpp-btn" onclick="spinWheel()">🎰 Колесо (C++)</button>
+    </div>
+    
     <a href="/">На главную</a>
+    
     <script>
+        async function checkAuth() {
+            const resp = await fetch('/users/balance');
+            if (!resp.ok) { location.href = '/login'; }
+        }
+        
         async function loadItems() {
             const resp = await fetch('/items/all');
             const data = await resp.json();
             document.getElementById('items').innerHTML = data.map(i => 
-                `<div class="item">${i.name} | ${i.salesman_name} | ${i.price}₽ | ${i.category}</div>`
+                `<div class="item">
+                    <b>${i.name}</b>
+                    Продавец: ${i.salesman_name}<br>
+                    Цена: ${i.price}₽<br>
+                    Категория: ${i.category}
+                </div>`
             ).join('');
         }
+        
         async function addItem() {
             const name = document.getElementById('itemName').value;
-            const salesman_name = document.getElementById('salesmanName').value;
             const price = document.getElementById('itemPrice').value;
             const category = document.getElementById('itemCategory').value;
-            await fetch(`/items/add?name=${name}&salesman_name=${salesman_name}&price=${price}&category=${category}`, { method: 'POST' });
-            loadItems();
+            const resp = await fetch(`/items/add?name=${name}&price=${price}&category=${category}`, { method: 'POST' });
+            if (resp.ok) { loadItems(); }
+            else { alert('Ошибка добавления'); }
         }
+        
         async function loadFromGo() {
-            const resp = await fetch('http://localhost:3333/items');
-            const data = await resp.json();
-            document.getElementById('items').innerHTML = data.map(i => 
-                `<div class="item">🐹 ${i.Name} | ${i.SalesmanName} | ${i.Price}₽ | ${i.Category}</div>`
-            ).join('');
+            try {
+                const resp = await fetch('http://localhost:3333/items');
+                const data = await resp.json();
+                document.getElementById('items').innerHTML = data.map(i => 
+                    `<div class="item" style="border: 2px solid #89b4fa;">
+                        <b>🐹 ${i.Name}</b>
+                        Продавец: ${i.SalesmanName}<br>
+                        Цена: ${i.Price}₽<br>
+                        Категория: ${i.Category}
+                    </div>`
+                ).join('');
+            } catch(e) { alert('Go-сервер недоступен'); }
         }
+        
         async function spinWheel() {
-            const resp = await fetch('http://localhost:4444/wheel');
-            const data = await resp.json();
-            alert('Колесо Фортуны: ' + data.prize);
+            try {
+                const resp = await fetch('http://localhost:4444/wheel');
+                const data = await resp.json();
+                alert(`🎰 Вы выиграли: ${data.prize} монет!`);
+            } catch(e) { alert('C++ сервер недоступен'); }
         }
+        
+        checkAuth();
         loadItems();
     </script>
 </body>

@@ -1,3 +1,4 @@
+# services/oll_services.py
 from repository.user_repo import UserRepository
 from repository.item_repo import ItemRepository
 from repository.order_repo import OrderRepository
@@ -6,9 +7,10 @@ class UserService:
     def __init__(self, db):
         self.repo = UserRepository(db)
 
+    def get_by_name(self, name):
+        return self.repo.get_by_name(name)
+
     def register(self, name, password, age):
-        if self.repo.get_by_name(name):
-            return None
         return self.repo.create(name, password, age)
 
     def login(self, name, password):

@@ -3,28 +3,35 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Вход</title>
+    <title>Вход | Tiger Market</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a2e; color: #cdd6f4; text-align: center; padding: 50px; }
-        input { display: block; margin: 10px auto; padding: 10px; width: 250px; border-radius: 8px; border: none; }
-        button { padding: 10px 30px; background: #a6e3a1; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        a { color: #89b4fa; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0d0d1a; color: #cdd6f4; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .box { background: #1a1a35; padding: 40px; border-radius: 16px; width: 380px; text-align: center; border: 1px solid #2a2a4a; }
+        h1 { color: #f5c542; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #45475a; background: #0d0d1a; color: #fff; }
+        button { width: 100%; padding: 12px; background: #a6e3a1; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        a { color: #89b4fa; display: block; margin-top: 15px; }
+        .error { color: #f38ba8; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <h1>Вход</h1>
-    <input type="text" id="name" placeholder="Имя">
-    <input type="password" id="password" placeholder="Пароль">
-    <button onclick="login()">Войти</button>
-    <a href="/register">Регистрация</a>
+    <div class="box">
+        <h1>🔑 Вход</h1>
+        <input type="text" id="name" placeholder="Имя">
+        <input type="password" id="password" placeholder="Пароль">
+        <button onclick="login()">Войти</button>
+        <div class="error" id="error"></div>
+        <a href="/register">Нет аккаунта?</a>
+    </div>
     <script>
         async function login() {
             const name = document.getElementById('name').value;
             const password = document.getElementById('password').value;
             const resp = await fetch(`/users/login?name=${name}&password=${password}`, { method: 'POST' });
             const data = await resp.json();
-            alert(JSON.stringify(data));
-            if (!data.error) location.href = '/catalog';
+            if (resp.ok) { location.href = '/catalog'; }
+            else { document.getElementById('error').textContent = data.detail || 'Ошибка'; }
         }
     </script>
 </body>

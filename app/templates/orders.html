@@ -3,30 +3,42 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Мои заказы</title>
+    <title>Мои заказы | Tiger Market</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a2e; color: #cdd6f4; text-align: center; padding: 20px; }
-        .order { background: #252536; padding: 15px; margin: 10px auto; border-radius: 12px; width: 300px; }
-        input { padding: 10px; width: 250px; border-radius: 8px; border: none; margin: 10px; }
-        button { padding: 8px 20px; background: #a6e3a1; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0d0d1a; color: #cdd6f4; padding: 20px; text-align: center; }
+        h1 { color: #f5c542; }
+        input { padding: 10px; margin: 10px; border-radius: 8px; border: 1px solid #45475a; background: #0d0d1a; color: #fff; width: 250px; }
+        button { padding: 10px 20px; background: #a6e3a1; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .order { background: #1a1a35; padding: 15px; border-radius: 12px; margin: 10px auto; max-width: 400px; border: 1px solid #2a2a4a; }
         a { color: #89b4fa; display: block; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>Мои заказы</h1>
+    <h1>📦 Мои заказы</h1>
     <input type="text" id="userName" placeholder="Имя пользователя">
-    <button onclick="loadOrders()">Показать заказы</button>
+    <button onclick="loadOrders()">Показать</button>
     <div id="orders"></div>
     <a href="/">На главную</a>
     <script>
+        async function checkAuth() {
+            const resp = await fetch('/users/balance');
+            if (!resp.ok) { location.href = '/login'; }
+        }
+        
         async function loadOrders() {
             const name = document.getElementById('userName').value;
             const resp = await fetch(`/orders/user/${name}`);
             const data = await resp.json();
             document.getElementById('orders').innerHTML = data.map(o => 
-                `<div class="order">Количество: ${o.quantity} | Сумма: ${o.total_price}₽</div>`
+                `<div class="order">
+                    Количество: ${o.quantity}<br>
+                    Сумма: ${o.total_price}₽
+                </div>`
             ).join('');
         }
+        
+        checkAuth();
     </script>
 </body>
 </html>

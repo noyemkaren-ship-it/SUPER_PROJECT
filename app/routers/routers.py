@@ -1,4 +1,4 @@
-# routers/all_routers.py
+# routers/routers.py
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -26,13 +26,35 @@ def create_token(user_name: str) -> str:
 def set_token_cookie(response, token):
     response.set_cookie("tiger_token", token, httponly=True, max_age=86400, samesite="lax")
 
+def get_current_user(request: Request):
+    token = request.cookies.get("tiger_token")
+    if not token:
+        raise HTTPException(401, "Нет токена в куках")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return payload["user_name"]
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(401, "Токен истёк")
+    except jwt.InvalidTokenError:
+        raise HTTPException(401, "Токен недействителен")
+
 @router.post("/users/register")
 @limiter.limit("5/minute")
 def register(request: Request, name: str, password: str, age: int, db: Session = Depends(get_db)):
+    if not name or not password or not age:
+        raise HTTPException(400, "Все поля обязательны")
+    if len(name) < 3:
+        raise HTTPException(400, "Имя должно быть от 3 символов")
+    if len(password) < 6:
+        raise HTTPException(400, "Пароль должен быть от 6 символов")
+    if age < 10 or age > 120:
+        raise HTTPException(400, "Некорректный возраст")
     service = UserService(db)
+    if service.get_by_name(name):
+        raise HTTPException(400, "Пользователь уже существует")
     user = service.register(name, hash_password(password), age)
     if not user:
-        raise HTTPException(400, "Пользователь уже существует")
+        raise HTTPException(500, "Ошибка создания")
     token = create_token(user.name)
     response = JSONResponse({"ok": True, "user": user.name})
     set_token_cookie(response, token)
@@ -41,6 +63,8 @@ def register(request: Request, name: str, password: str, age: int, db: Session =
 @router.post("/users/login")
 @limiter.limit("5/minute")
 def login(request: Request, name: str, password: str, db: Session = Depends(get_db)):
+    if not name or not password:
+        raise HTTPException(400, "Имя и пароль обязательны")
     service = UserService(db)
     user = service.login(name, hash_password(password))
     if not user:
@@ -58,12 +82,18 @@ def logout():
 
 @router.get("/users/balance")
 def balance(request: Request, db: Session = Depends(get_db)):
-    return {"balance": UserService(db).get_balance(request.state.user)}
+    user_name = get_current_user(request)
+    return {"balance": UserService(db).get_balance(user_name)}
 
 @router.post("/items/add")
 @limiter.limit("10/minute")
 def add_item(request: Request, name: str, price: float, category: str, db: Session = Depends(get_db)):
-    item = ItemService(db).add_item(name, request.state.user, price, category)
+    user_name = get_current_user(request)
+    if not name or not category:
+        raise HTTPException(400, "Название и категория обязательны")
+    if price <= 0:
+        raise HTTPException(400, "Цена должна быть положительной")
+    item = ItemService(db).add_item(name, user_name, price, category)
     return {"id": item.id, "name": item.name, "price": item.price}
 
 @router.get("/items/all")
@@ -79,8 +109,15 @@ def items_by_category(category: str, db: Session = Depends(get_db)):
 @router.post("/orders/create")
 @limiter.limit("5/minute")
 def create_order(request: Request, quantity: int, salesman_name: str, price: float, db: Session = Depends(get_db)):
+    user_name = get_current_user(request)
+    if quantity <= 0:
+        raise HTTPException(400, "Количество должно быть больше 0")
+    if price <= 0:
+        raise HTTPException(400, "Цена должна быть положительной")
+    if salesman_name == user_name:
+        raise HTTPException(400, "Нельзя купить у самого себя")
     try:
-        order = OrderService(db).create_order(request.state.user, quantity, salesman_name, price)
+        order = OrderService(db).create_order(user_name, quantity, salesman_name, price)
         return {"id": order.id, "total_price": order.total_price}
     except Exception as e:
         raise HTTPException(400, str(e))
