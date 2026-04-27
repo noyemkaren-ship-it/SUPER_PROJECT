@@ -9,6 +9,9 @@ from slowapi.util import get_remote_address
 from slowapi.middleware import SlowAPIMiddleware
 import jwt
 from routers.routers import router
+from routers.test_password import java_chek
+
+java_chek("123456")
 
 app = FastAPI(title="Tiger Market")
 
