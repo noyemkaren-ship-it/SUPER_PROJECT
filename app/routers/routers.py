@@ -10,6 +10,8 @@ import hashlib
 import jwt
 import datetime
 import httpx
+from models.order_models import Order
+from models.item_models import Item
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -218,3 +220,49 @@ def cpp_wheel():
         return resp.json()
     except:
         raise HTTPException(503, "C++ сервер недоступен")
+    
+
+@router.delete("/orders/delete/{order_id}", tags=["Заказы"])
+def delete_order(request: Request, order_id: int, db: Session = Depends(get_db)):
+    user_name = get_current_user(request)
+    service = OrderService(db)
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(404, "Заказ не найден")
+    if order.user_name != user_name:
+        raise HTTPException(403, "Это не ваш заказ")
+    db.delete(order)
+    db.commit()
+    return {"ok": True, "message": f"Заказ #{order_id} удалён"}
+
+
+@router.get("/admin/orders", tags=["Админ-панель"])
+def admin_get_orders(request: Request, db: Session = Depends(get_db)):
+    user_name = get_current_user(request)
+    if user_name != "admin":
+        raise HTTPException(403, "Доступ запрещён")
+    orders = db.query(Order).all()
+    return [{"id": o.id, "user_name": o.user_name, "quantity": o.quantity, "salesman_name": o.salesman_name, "price": o.price, "total_price": o.total_price} for o in orders]
+
+@router.post("/admin/orders/complete/{order_id}", tags=["Админ-панель"])
+def admin_complete_order(request: Request, order_id: int, db: Session = Depends(get_db)):
+    user_name = get_current_user(request)
+    if user_name != "admin":
+        raise HTTPException(403, "Доступ запрещён")
+    
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(404, "Заказ не найден")
+    
+    # Начисляем админу сумму заказа
+    admin = UserService(db).get_by_name("admin")
+    if admin:
+        admin.balance = (admin.balance or 0) + order.total_price
+        db.commit()
+        db.refresh(admin)
+    
+    earned = order.total_price
+    db.delete(order)
+    db.commit()
+    
+    return {"ok": True, "message": f"Заказ #{order_id} выполнен", "earned": earned}

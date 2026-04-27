@@ -73,3 +73,7 @@ def catalog_page(request: Request):
 @app.get("/orders")
 def orders_page(request: Request):
     return templates.TemplateResponse("orders.html", {"request": request})
+
+@app.get("/admin")
+def admin_page(request: Request):
+    return templates.TemplateResponse("admin.html", {"request": request})

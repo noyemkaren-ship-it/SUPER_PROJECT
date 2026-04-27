@@ -1,0 +1,191 @@
+<!-- templates/admin.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель | Tiger Market</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0d0d1a;
+            color: #cdd6f4;
+            min-height: 100vh;
+        }
+        .bg-animation {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0;
+        }
+        .orb {
+            position: absolute; border-radius: 50%; filter: blur(100px);
+            animation: float 8s infinite ease-in-out;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        .container {
+            max-width: 900px; margin: 0 auto; padding: 30px 20px;
+            position: relative; z-index: 1;
+        }
+        .header {
+            text-align: center; margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 2.5rem; color: #f5c542;
+            text-shadow: 0 0 30px rgba(245,197,66,0.3);
+        }
+        .header p { color: #8888aa; }
+        .stats {
+            background: rgba(26,26,53,0.8); backdrop-filter: blur(10px);
+            border-radius: 16px; padding: 25px; margin-bottom: 30px;
+            border: 1px solid #2a2a4a;
+            display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;
+        }
+        .stat { text-align: center; }
+        .stat h3 { color: #a6e3a1; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .stat p { font-size: 1.8rem; font-weight: 700; color: #f5c542; }
+        .order {
+            background: rgba(26,26,53,0.8); backdrop-filter: blur(10px);
+            border-radius: 16px; padding: 20px; margin-bottom: 15px;
+            border: 1px solid #2a2a4a;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 10px; transition: 0.3s;
+        }
+        .order:hover { border-color: #f5c542; }
+        .order-info p { margin: 4px 0; }
+        .order-info strong { color: #f5c542; }
+        .btn {
+            padding: 12px 24px; border: none; border-radius: 10px;
+            font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 0.95rem;
+        }
+        .btn.done { background: #a6e3a1; color: #1a1a2e; }
+        .btn.done:hover { background: #89d48a; transform: scale(1.03); }
+        .btn.danger { background: #f38ba8; color: #1a1a2e; }
+        .btn.danger:hover { background: #e06b8a; transform: scale(1.03); }
+        .btn.nav {
+            background: rgba(26,26,53,0.8); color: #cdd6f4;
+            border: 1px solid #2a2a4a; text-decoration: none;
+            display: inline-block; text-align: center; margin-top: 20px;
+        }
+        .btn.nav:hover { border-color: #f5c542; }
+        .empty { text-align: center; color: #666; padding: 40px; }
+        .message {
+            text-align: center; padding: 12px; border-radius: 10px;
+            margin-bottom: 20px; display: none;
+        }
+        .message.success { background: rgba(166,227,161,0.15); color: #a6e3a1; border: 1px solid #a6e3a1; display: block; }
+        .message.error { background: rgba(243,139,168,0.15); color: #f38ba8; border: 1px solid #f38ba8; display: block; }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="orb" style="width:350px;height:350px;background:rgba(245,197,66,0.06);top:-80px;left:-80px;"></div>
+        <div class="orb" style="width:300px;height:300px;background:rgba(166,227,161,0.06);bottom:-80px;right:-80px;"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Админ-панель</h1>
+            <p>Управление заказами маркетплейса</p>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <div class="stats">
+            <div class="stat">
+                <h3>Активных заказов</h3>
+                <p id="total-orders">0</p>
+            </div>
+            <div class="stat">
+                <h3>Общая сумма</h3>
+                <p id="total-sum">0 ₽</p>
+            </div>
+        </div>
+
+        <div id="orders-container"></div>
+
+        <a href="/" class="btn nav">🏠 На главную</a>
+    </div>
+
+    <script>
+        async function checkAdmin() {
+            try {
+                const resp = await fetch('/users/balance');
+                if (!resp.ok) { location.href = '/login'; return; }
+                const data = await resp.json();
+                // Проверяем balance — у админа он всегда будет 0 (мы проверяем имя на бэке)
+                loadOrders();
+            } catch(e) { location.href = '/login'; }
+        }
+
+        async function loadOrders() {
+            try {
+                const resp = await fetch('/admin/orders');
+                if (resp.status === 403) {
+                    document.getElementById('orders-container').innerHTML = '<p class="empty">⛔ Доступ запрещён. Вы не админ.</p>';
+                    return;
+                }
+                const data = await resp.json();
+                
+                const container = document.getElementById('orders-container');
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p class="empty">Все заказы выполнены. Отличная работа!</p>';
+                    document.getElementById('total-orders').textContent = '0';
+                    document.getElementById('total-sum').textContent = '0 ₽';
+                    return;
+                }
+
+                document.getElementById('total-orders').textContent = data.length;
+                const total = data.reduce((sum, o) => sum + o.total_price, 0);
+                document.getElementById('total-sum').textContent = total + ' ₽';
+
+                container.innerHTML = data.map(o => `
+                    <div class="order" id="order-${o.id}">
+                        <div class="order-info">
+                            <p><strong>Заказ #${o.id}</strong></p>
+                            <p>Покупатель: ${o.user_name}</p>
+                            <p>Продавец: ${o.salesman_name}</p>
+                            <p>Количество: ${o.quantity} | Цена: ${o.price}₽</p>
+                            <p>Итого: <strong>${o.total_price}₽</strong></p>
+                        </div>
+                        <button class="btn done" onclick="completeOrder(${o.id})">✅ Выполнен</button>
+                    </div>
+                `).join('');
+            } catch(e) {
+                document.getElementById('orders-container').innerHTML = '<p class="empty">Ошибка загрузки</p>';
+            }
+        }
+
+        async function completeOrder(orderId) {
+            try {
+                const resp = await fetch(`/admin/orders/complete/${orderId}`, { method: 'POST' });
+                const data = await resp.json();
+                if (resp.ok) {
+                    showMessage(`Заказ #${orderId} выполнен! На баланс админа начислено ${data.earned}₽`, 'success');
+                    document.getElementById(`order-${orderId}`).style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById(`order-${orderId}`).remove();
+                        loadOrders();
+                    }, 300);
+                } else {
+                    showMessage(data.detail || 'Ошибка', 'error');
+                }
+            } catch(e) {
+                showMessage('Ошибка соединения', 'error');
+            }
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message ' + type;
+            setTimeout(() => msg.className = 'message', 3000);
+        }
+
+        checkAdmin();
+    </script>
+</body>
+</html>
