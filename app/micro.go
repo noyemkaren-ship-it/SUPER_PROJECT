@@ -21,7 +21,7 @@ type Item struct {
 
 func main() {
 	var err error
-	db, err = gorm.Open(sqlite.Open("marketplace.db"), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open("app.db"), &gorm.Config{})
 	if err != nil {
 		panic("Нет базы")
 	}
