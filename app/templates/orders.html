@@ -6,39 +6,56 @@
     <title>Мои заказы | Tiger Market</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #0d0d1a; color: #cdd6f4; padding: 20px; text-align: center; }
-        h1 { color: #f5c542; }
-        input { padding: 10px; margin: 10px; border-radius: 8px; border: 1px solid #45475a; background: #0d0d1a; color: #fff; width: 250px; }
-        button { padding: 10px 20px; background: #a6e3a1; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .order { background: #1a1a35; padding: 15px; border-radius: 12px; margin: 10px auto; max-width: 400px; border: 1px solid #2a2a4a; }
-        a { color: #89b4fa; display: block; margin-top: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0d0d1a; color: #cdd6f4; }
+        .header { background: #1a1a35; padding: 20px; text-align: center; border-bottom: 1px solid #2a2a4a; }
+        .header h1 { color: #f5c542; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .order { background: #1a1a35; padding: 20px; border-radius: 12px; margin: 10px 0; border: 1px solid #2a2a4a; display: flex; justify-content: space-between; align-items: center; }
+        .order-info p { margin: 3px 0; }
+        .order-total { font-size: 1.3rem; color: #f5c542; font-weight: bold; }
+        .empty { text-align: center; color: #666; margin-top: 50px; }
+        a { color: #89b4fa; display: block; text-align: center; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>📦 Мои заказы</h1>
-    <input type="text" id="userName" placeholder="Имя пользователя">
-    <button onclick="loadOrders()">Показать</button>
-    <div id="orders"></div>
-    <a href="/">На главную</a>
+    <div class="header">
+        <h1>📦 Мои заказы</h1>
+    </div>
+    <div class="container" id="orders-container">
+        <p class="empty">Загрузка...</p>
+    </div>
+    <a href="/">🏠 На главную</a>
     <script>
-        async function checkAuth() {
-            const resp = await fetch('/users/balance');
-            if (!resp.ok) { location.href = '/login'; }
-        }
-        
         async function loadOrders() {
-            const name = document.getElementById('userName').value;
-            const resp = await fetch(`/orders/user/${name}`);
-            const data = await resp.json();
-            document.getElementById('orders').innerHTML = data.map(o => 
-                `<div class="order">
-                    Количество: ${o.quantity}<br>
-                    Сумма: ${o.total_price}₽
-                </div>`
-            ).join('');
+            try {
+                const userResp = await fetch('/users/balance');
+                if (!userResp.ok) { location.href = '/login'; return; }
+                
+                const balanceData = await userResp.json();
+                const resp = await fetch('/orders/all');
+                const data = await resp.json();
+                
+                const container = document.getElementById('orders-container');
+                if (data.length === 0) {
+                    container.innerHTML = '<p class="empty">У вас пока нет заказов</p>';
+                    return;
+                }
+                
+                container.innerHTML = data.map(o => `
+                    <div class="order">
+                        <div class="order-info">
+                            <p>Количество: ${o.quantity}</p>
+                            <p>Продавец: ${o.salesman_name}</p>
+                            <p>Цена за шт: ${o.price} ₽</p>
+                        </div>
+                        <div class="order-total">${o.total_price} ₽</div>
+                    </div>
+                `).join('');
+            } catch(e) {
+                document.getElementById('orders-container').innerHTML = '<p class="empty">Ошибка загрузки</p>';
+            }
         }
-        
-        checkAuth();
+        loadOrders();
     </script>
 </body>
 </html>

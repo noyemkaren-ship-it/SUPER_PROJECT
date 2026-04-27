@@ -142,3 +142,11 @@ def deposit(request: Request, amount: float, db: Session = Depends(get_db)):
         raise HTTPException(404, "Пользователь не найден")
     
     return {"ok": True, "balance": user.balance, "added": amount}
+
+
+
+@router.get("/orders/all")
+def get_my_orders(request: Request, db: Session = Depends(get_db)):
+    user_name = get_current_user(request)
+    orders = OrderService(db).get_user_orders(user_name)
+    return [{"id": o.id, "quantity": o.quantity, "salesman_name": o.salesman_name, "price": o.price, "total_price": o.total_price} for o in orders]
