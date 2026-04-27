@@ -1,4 +1,4 @@
-# main.py
+
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from slowapi import Limiter
@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from database.base import init_db
-from routers import user_router, item_router, order_router
+from routers.routers import user_router, item_router, order_router
 
 app = FastAPI(title="Tiger Market")
 
