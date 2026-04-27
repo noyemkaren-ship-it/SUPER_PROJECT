@@ -7,47 +7,248 @@
     <title>🐅 Tiger Market</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #0d0d1a; color: #cdd6f4; text-align: center; padding: 50px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        h1 { color: #f5c542; font-size: 2.5rem; margin-bottom: 10px; }
-        .subtitle { color: #8888aa; margin-bottom: 30px; }
-        .nav { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
-        .nav a { color: #cdd6f4; text-decoration: none; background: #1a1a35; padding: 12px 25px; border-radius: 12px; transition: 0.3s; border: 1px solid #2a2a4a; display: flex; align-items: center; gap: 8px; }
-        .nav a:hover { background: #252545; border-color: #f5c542; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245,197,66,0.2); }
-        .user-status { margin-top: 30px; background: #1a1a35; padding: 15px 25px; border-radius: 12px; border: 1px solid #2a2a4a; display: none; }
-        .logout-btn { color: #f38ba8; cursor: pointer; background: none; border: 1px solid #f38ba8; padding: 8px 18px; border-radius: 8px; margin-top: 10px; transition: 0.3s; }
-        .logout-btn:hover { background: #f38ba8; color: #1a1a2e; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0d0d1a;
+            color: #cdd6f4;
+            min-height: 100vh;
+        }
+
+        /* Фон с плавающими огоньками */
+        .bg-animation {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Шапка */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 3rem;
+            color: #f5c542;
+            text-shadow: 0 0 40px rgba(245,197,66,0.3);
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            color: #8888aa;
+            font-size: 1.1rem;
+        }
+
+        /* Карточки */
+        .card {
+            background: rgba(26,26,53,0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid #2a2a4a;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+        }
+
+        .card h2 {
+            color: #a6e3a1;
+            font-size: 1.3rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        /* Баланс */
+        .balance {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #a6e3a1;
+            text-shadow: 0 0 20px rgba(166,227,161,0.4);
+        }
+
+        /* Заказы */
+        .orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .order-item {
+            background: #252545;
+            padding: 18px;
+            border-radius: 12px;
+            border: 1px solid #3a3a5a;
+        }
+        .order-item span {
+            color: #f5c542;
+            font-weight: bold;
+        }
+
+        /* Кнопки */
+        .nav {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 28px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+        .btn-primary {
+            background: #1a1a35;
+            color: #cdd6f4;
+            border-color: #2a2a4a;
+        }
+        .btn-primary:hover {
+            border-color: #f5c542;
+            box-shadow: 0 0 20px rgba(245,197,66,0.2);
+        }
+        .btn-danger {
+            background: transparent;
+            color: #f38ba8;
+            border-color: #f38ba8;
+        }
+        .btn-danger:hover {
+            background: #f38ba8;
+            color: #1a1a2e;
+        }
+
+        /* Приветствие для гостей */
+        .guest-section {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .guest-section h2 {
+            color: #f5c542;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        .guest-links {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .guest-link {
+            color: #89b4fa;
+            text-decoration: none;
+            font-size: 1.2rem;
+            padding: 15px 35px;
+            background: rgba(26,26,53,0.8);
+            border-radius: 12px;
+            border: 1px solid #2a2a4a;
+            transition: 0.3s;
+        }
+        .guest-link:hover {
+            border-color: #89b4fa;
+            box-shadow: 0 0 20px rgba(137,180,250,0.2);
+        }
+
+        .empty {
+            color: #666;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
-    <h1>🐅 Tiger Market</h1>
-    <p class="subtitle">Маркетплейс, где правят тигры</p>
-    <div class="nav" id="nav-links">
-        <a href="/register">📝 Регистрация</a>
-        <a href="/login">🔑 Вход</a>
-        <a href="/catalog">🛍️ Каталог</a>
-        <a href="/orders">📦 Мои заказы</a>
+
+    <!-- Плавающие огоньки -->
+    <div class="bg-animation">
+        <div class="orb" style="width: 300px; height: 300px; background: rgba(245,197,66,0.08); top: -50px; left: -50px;"></div>
+        <div class="orb" style="width: 250px; height: 250px; background: rgba(166,227,161,0.06); bottom: -50px; right: -50px;"></div>
+        <div class="orb" style="width: 200px; height: 200px; background: rgba(137,180,250,0.08); top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
     </div>
-    <div class="user-status" id="user-status">
-        <p>Привет, <span id="user-name"></span>!</p>
-        <button class="logout-btn" onclick="logout()">Выйти</button>
+
+    <div class="container">
+
+        <!-- Если пользователь авторизован -->
+        {% if user %}
+        
+        <!-- Шапка с приветствием -->
+        <div class="header">
+            <h1>🐅 Tiger Market</h1>
+            <p>С возвращением, <strong style="color:#f5c542;">{{ user.name }}</strong>!</p>
+        </div>
+
+        <!-- Карточка баланса -->
+        <div class="card">
+            <h2>💰 Ваш баланс</h2>
+            <p class="balance">{{ user.balance }} ₽</p>
+        </div>
+
+        <!-- Карточка заказов -->
+        <div class="card">
+            <h2>📦 Ваши заказы</h2>
+            {% if user.orders %}
+            <div class="orders-grid">
+                {% for order in user.orders %}
+                <div class="order-item">
+                    <p>Количество: <span>{{ order.quantity }}</span></p>
+                    <p>Сумма: <span>{{ order.total_price }} ₽</span></p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty">Пока нет заказов. Самое время что-нибудь купить!</p>
+            {% endif %}
+        </div>
+
+        <!-- Навигация -->
+        <div class="nav">
+            <a href="/catalog" class="btn btn-primary">🛍️ Перейти в каталог</a>
+            <button onclick="logout()" class="btn btn-danger">🚪 Выйти</button>
+        </div>
+
+        {% else %}
+
+        <!-- Гость -->
+        <div class="header">
+            <h1>🐅 Tiger Market</h1>
+            <p>Добро пожаловать на маркетплейс, где правят тигры</p>
+        </div>
+
+        <div class="guest-section">
+            <h2>Начните прямо сейчас</h2>
+            <div class="guest-links">
+                <a href="/register" class="guest-link">📝 Создать аккаунт</a>
+                <a href="/login" class="guest-link">🔑 Войти</a>
+            </div>
+        </div>
+
+        {% endif %}
+
     </div>
+
     <script>
-        async function checkAuth() {
-            const resp = await fetch('/users/balance');
-            if (resp.ok) {
-                const data = await resp.json();
-                const status = document.getElementById('user-status');
-                status.style.display = 'block';
-                document.getElementById('user-name').textContent = 'Тигр';
-                document.getElementById('nav-links').querySelectorAll('a')[0].style.display = 'none';
-                document.getElementById('nav-links').querySelectorAll('a')[1].style.display = 'none';
-            }
-        }
         async function logout() {
             await fetch('/users/logout', { method: 'POST' });
             location.reload();
         }
-        checkAuth();
     </script>
 </body>
 </html>
