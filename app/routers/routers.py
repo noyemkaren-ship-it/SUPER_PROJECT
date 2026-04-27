@@ -173,7 +173,7 @@ def create_order(request: Request, quantity: int, salesman_name: str, price: flo
     if salesman_name == user_name:
         raise HTTPException(400, "Нельзя купить у самого себя")
     try:
-        order = OrderService(db).create_order(user_name, quantity, salesman_name, price)
+        order = UserService(db).create_order(user_name, quantity, salesman_name, price)
         return {"id": order.id, "total_price": order.total_price}
     except Exception as e:
         raise HTTPException(400, str(e))

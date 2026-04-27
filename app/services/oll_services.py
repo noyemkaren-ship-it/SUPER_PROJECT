@@ -6,6 +6,7 @@ from repository.order_repo import OrderRepository
 class UserService:
     def __init__(self, db):
         self.repo = UserRepository(db)
+        self.db = db
 
     def get_by_name(self, name):
         return self.repo.get_by_name(name)
@@ -21,12 +22,24 @@ class UserService:
 
     def get_balance(self, name):
         user = self.repo.get_by_name(name)
-        if user:
-            return user.balance
-        return None
+        return user.balance if user and user.balance else 0
 
     def update_balance(self, name, amount):
-        return self.repo.update_balance(name, amount)
+        user = self.repo.get_by_name(name)
+        if not user:
+            return None
+        user.balance = (user.balance or 0) + amount
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
+    def create_order(self, user_name, quantity, salesman_name, price):
+        total = quantity * price
+        balance = self.get_balance(user_name)
+        if balance < total:
+            raise Exception(f"Недостаточно средств. Баланс: {balance}₽, нужно: {total}₽")
+        self.update_balance(user_name, -total)
+        return OrderRepository(self.db).create(user_name, quantity, salesman_name, price)
 
 
 class ItemService:
