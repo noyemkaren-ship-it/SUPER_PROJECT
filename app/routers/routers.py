@@ -48,12 +48,11 @@ def get_current_user(request: Request):
 @router.post("/users/register", tags=["Пользователи"])
 @limiter.limit("5/minute")
 def register(request: Request, name: str, password: str, age: int, db: Session = Depends(get_db)):
-    if java_chek(password=password) == "empty" or java_chek(password=password) == "weak":
+    check_result = java_chek(password)
+    if check_result == "empty" or check_result == "weak":
         return {"message": "Очень плохой пароль!"}
-    elif java_chek(password=password) == "medium":
+    elif check_result == "medium":
         return {"message": "Пароль не плохой но можно было защитить лучше!"}
-    else:
-        pass
 
     if not name or not password or not age:
         raise HTTPException(400, "Все поля обязательны")
