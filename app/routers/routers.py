@@ -53,6 +53,7 @@ def register(request: Request, name: str, password: str, age: int, db: Session =
         return {"message": "Очень плохой пароль!"}
     elif check_result == "medium":
         return {"message": "Пароль не плохой но можно было защитить лучше!"}
+    print(check_result)
 
     if not name or not password or not age:
         raise HTTPException(400, "Все поля обязательны")
