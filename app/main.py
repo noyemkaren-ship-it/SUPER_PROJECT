@@ -10,8 +10,11 @@ from slowapi.middleware import SlowAPIMiddleware
 import jwt
 from routers.routers import router
 from routers.test_password import java_chek
+import os
 
-java_chek("123456")
+os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/routers")
+print("JAVA CHECK:", java_chek("123456"))
+
 
 app = FastAPI(title="Tiger Market")
 
