@@ -42,7 +42,8 @@ def get_current_user(request: Request):
     except jwt.InvalidTokenError:
         raise HTTPException(401, "Токен недействителен")
 
-@router.post("/users/register")
+# ========== ПОЛЬЗОВАТЕЛИ ==========
+@router.post("/users/register", tags=["Пользователи"])
 @limiter.limit("5/minute")
 def register(request: Request, name: str, password: str, age: int, db: Session = Depends(get_db)):
     if not name or not password or not age:
@@ -64,7 +65,7 @@ def register(request: Request, name: str, password: str, age: int, db: Session =
     set_token_cookie(response, token)
     return response
 
-@router.post("/users/login")
+@router.post("/users/login", tags=["Пользователи"])
 @limiter.limit("5/minute")
 def login(request: Request, name: str, password: str, db: Session = Depends(get_db)):
     if not name or not password:
@@ -78,18 +79,18 @@ def login(request: Request, name: str, password: str, db: Session = Depends(get_
     set_token_cookie(response, token)
     return response
 
-@router.post("/users/logout")
+@router.post("/users/logout", tags=["Пользователи"])
 def logout():
     response = JSONResponse({"ok": True})
     response.delete_cookie("tiger_token")
     return response
 
-@router.get("/users/balance")
+@router.get("/users/balance", tags=["Пользователи"])
 def balance(request: Request, db: Session = Depends(get_db)):
     user_name = get_current_user(request)
     return {"balance": UserService(db).get_balance(user_name)}
 
-@router.post("/users/deposit")
+@router.post("/users/deposit", tags=["Пользователи"])
 @limiter.limit("10/minute")
 def deposit(request: Request, amount: float, db: Session = Depends(get_db)):
     user_name = get_current_user(request)
@@ -103,45 +104,21 @@ def deposit(request: Request, amount: float, db: Session = Depends(get_db)):
         raise HTTPException(404, "Пользователь не найден")
     return {"ok": True, "balance": user.balance, "added": amount}
 
-@router.get("/go/items")
-def go_items():
-    try:
-        resp = httpx.get(f"{GO_SERVER}/items")
-        return resp.json()
-    except:
-        raise HTTPException(503, "Go-сервер недоступен")
-
-@router.get("/go/items/{category}")
-def go_items_by_category(category: str):
-    try:
-        resp = httpx.get(f"{GO_SERVER}/items/{category}")
-        return resp.json()
-    except:
-        raise HTTPException(503, "Go-сервер недоступен")
-
-@router.post("/go/orders")
-def go_create_order(request: Request, quantity: int, salesman_name: str, price: float):
+@router.delete("/users/delete", tags=["Пользователи"])
+def delete_account(request: Request, db: Session = Depends(get_db)):
     user_name = get_current_user(request)
-    try:
-        resp = httpx.post(f"{GO_SERVER}/orders", json={
-            "user_name": user_name,
-            "quantity": quantity,
-            "salesman_name": salesman_name,
-            "price": price
-        })
-        return resp.json()
-    except:
-        raise HTTPException(503, "Go-сервер недоступен")
+    service = UserService(db)
+    user = service.get_by_name(user_name)
+    if not user:
+        raise HTTPException(404, "Пользователь не найден")
+    db.delete(user)
+    db.commit()
+    response = JSONResponse({"ok": True, "message": "Аккаунт удалён"})
+    response.delete_cookie("tiger_token")
+    return response
 
-@router.get("/cpp/wheel")
-def cpp_wheel():
-    try:
-        resp = httpx.get(f"{CPP_SERVER}/wheel")
-        return resp.json()
-    except:
-        raise HTTPException(503, "C++ сервер недоступен")
 
-@router.post("/items/add")
+@router.post("/items/add", tags=["Товары"])
 @limiter.limit("10/minute")
 def add_item(request: Request, name: str, price: float, category: str, db: Session = Depends(get_db)):
     user_name = get_current_user(request)
@@ -152,17 +129,31 @@ def add_item(request: Request, name: str, price: float, category: str, db: Sessi
     item = ItemService(db).add_item(name, user_name, price, category)
     return {"id": item.id, "name": item.name, "price": item.price}
 
-@router.get("/items/all")
+@router.get("/items/all", tags=["Товары"])
 def all_items(db: Session = Depends(get_db)):
     items = ItemService(db).get_all_items()
     return [{"id": i.id, "name": i.name, "salesman_name": i.salesman_name, "price": i.price, "category": i.category} for i in items]
 
-@router.get("/items/category/{category}")
+@router.get("/items/category/{category}", tags=["Товары"])
 def items_by_category(category: str, db: Session = Depends(get_db)):
     items = ItemService(db).get_by_category(category)
     return [{"id": i.id, "name": i.name, "price": i.price} for i in items]
 
-@router.post("/orders/create")
+@router.delete("/items/delete/{item_id}", tags=["Товары"])
+def delete_item(request: Request, item_id: int, db: Session = Depends(get_db)):
+    user_name = get_current_user(request)
+    service = ItemService(db)
+    item = db.query(Item).filter(Item.id == item_id).first()
+    if not item:
+        raise HTTPException(404, "Товар не найден")
+    if item.salesman_name != user_name:
+        raise HTTPException(403, "Это не ваш товар")
+    db.delete(item)
+    db.commit()
+    return {"ok": True, "message": "Товар удалён"}
+
+
+@router.post("/orders/create", tags=["Заказы"])
 @limiter.limit("5/minute")
 def create_order(request: Request, quantity: int, salesman_name: str, price: float, db: Session = Depends(get_db)):
     user_name = get_current_user(request)
@@ -178,13 +169,52 @@ def create_order(request: Request, quantity: int, salesman_name: str, price: flo
     except Exception as e:
         raise HTTPException(400, str(e))
 
-@router.get("/orders/user/{user_name}")
+@router.get("/orders/user/{user_name}", tags=["Заказы"])
 def get_user_orders(user_name: str, db: Session = Depends(get_db)):
     orders = OrderService(db).get_user_orders(user_name)
     return [{"id": o.id, "quantity": o.quantity, "total_price": o.total_price} for o in orders]
 
-@router.get("/orders/all")
+@router.get("/orders/all", tags=["Заказы"])
 def get_my_orders(request: Request, db: Session = Depends(get_db)):
     user_name = get_current_user(request)
     orders = OrderService(db).get_user_orders(user_name)
     return [{"id": o.id, "quantity": o.quantity, "salesman_name": o.salesman_name, "price": o.price, "total_price": o.total_price} for o in orders]
+
+
+@router.get("/go/items", tags=["Go-микросервис"])
+def go_items():
+    try:
+        resp = httpx.get(f"{GO_SERVER}/items")
+        return resp.json()
+    except:
+        raise HTTPException(503, "Go-сервер недоступен")
+
+@router.get("/go/items/{category}", tags=["Go-микросервис"])
+def go_items_by_category(category: str):
+    try:
+        resp = httpx.get(f"{GO_SERVER}/items/{category}")
+        return resp.json()
+    except:
+        raise HTTPException(503, "Go-сервер недоступен")
+
+@router.post("/go/orders", tags=["Go-микросервис"])
+def go_create_order(request: Request, quantity: int, salesman_name: str, price: float):
+    user_name = get_current_user(request)
+    try:
+        resp = httpx.post(f"{GO_SERVER}/orders", json={
+            "user_name": user_name,
+            "quantity": quantity,
+            "salesman_name": salesman_name,
+            "price": price
+        })
+        return resp.json()
+    except:
+        raise HTTPException(503, "Go-сервер недоступен")
+
+@router.get("/cpp/wheel", tags=["C++-микросервис"])
+def cpp_wheel():
+    try:
+        resp = httpx.get(f"{CPP_SERVER}/wheel")
+        return resp.json()
+    except:
+        raise HTTPException(503, "C++ сервер недоступен")
