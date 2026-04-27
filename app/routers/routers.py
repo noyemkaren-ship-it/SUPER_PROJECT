@@ -126,3 +126,19 @@ def create_order(request: Request, quantity: int, salesman_name: str, price: flo
 def get_user_orders(user_name: str, db: Session = Depends(get_db)):
     orders = OrderService(db).get_user_orders(user_name)
     return [{"id": o.id, "quantity": o.quantity, "total_price": o.total_price} for o in orders]
+
+@router.post("/users/deposit/{amount}")
+@limiter.limit("10/minute")
+def deposit(request: Request, amount: float, db: Session = Depends(get_db)):
+    user_name = get_current_user(request)
+    if amount <= 0:
+        raise HTTPException(400, "Сумма пополнения должна быть положительной")
+    if amount > 100000:
+        raise HTTPException(400, "Слишком большая сумма. Максимум 100 000 за раз")
+    
+    service = UserService(db)
+    user = service.update_balance(user_name, amount)
+    if not user:
+        raise HTTPException(404, "Пользователь не найден")
+    
+    return {"ok": True, "balance": user.balance, "added": amount}
