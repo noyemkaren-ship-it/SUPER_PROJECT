@@ -14,3 +14,14 @@ from models.user_models import User
 from models.order_models import Order    
 def init_db():
     Base.metadata.create_all(bind=engine)
+
+from sqlalchemy.orm import sessionmaker
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
