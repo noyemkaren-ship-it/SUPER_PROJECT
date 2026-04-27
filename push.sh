@@ -32,5 +32,5 @@ git add .
 echo "Сообщение коммита:"
 read msg
 git commit -m "${msg:-обнова}"
-git push -u origin main
+git push 
 echo "✅ Готово!"
